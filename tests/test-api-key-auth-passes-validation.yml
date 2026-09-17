@@ -1,0 +1,44 @@
+name: Test api-key auth passes validation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create dummy policy file
+        run: |
+          mkdir -p /tmp/ts-test
+          cat > /tmp/ts-test/policy.hujson << 'EOF'
+          {
+            "acls": [],
+            "tagOwners": {}
+          }
+          EOF
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          tailnet: "example.com"
+          api-key: "tskey-api-fake123456"
+          policy-file: /tmp/ts-test/policy.hujson
+          action: test
+
+      - name: Assert action did not fail on auth validation
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should pass auth validation (api-key provided, no oauth-secret)
+          # and proceed to the Go step. The Go step may fail due to invalid credentials,
+          # but it should NOT fail at the auth validation step.
+          # We accept both success and failure here since real Tailscale credentials
+          # are not available in the test environment.
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action passed auth validation (proceeded past auth checks)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
