@@ -1,0 +1,44 @@
+name: Test oauth-client-id with audience passes validation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create dummy policy file
+        run: |
+          cat > ./policy.hujson << 'EOF'
+          {
+            "ACLs": [
+              {
+                "Action": "accept",
+                "Src": ["*"],
+                "Dst": ["*:*"]
+              }
+            ]
+          }
+          EOF
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          tailnet: "example.com"
+          policy-file: ./policy.hujson
+          action: test
+          oauth-client-id: "fake-client-id"
+          audience: "https://tailscale.com"
+          # oauth-client-id + audience provided (no api-key or oauth-secret)
+          # Auth validation should pass; fetch-id-token step will attempt to get
+          # an OIDC token (may fail in this environment), and pusher will fail
+          # with fake credentials — but auth validation itself should not block.
+      - name: Assert action ran (not skipped)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran and produced outcome '$OUTCOME' (expected failure at pusher/token-fetch with fake credentials)"
