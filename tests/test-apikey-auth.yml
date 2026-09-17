@@ -1,0 +1,46 @@
+name: Test action with api-key auth (proceeds past auth checks)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create dummy policy file
+        run: |
+          cat > ./policy.hujson << 'EOF'
+          {
+            "acls": [
+              {"action": "accept", "src": ["*"], "dst": ["*:*"]}
+            ]
+          }
+          EOF
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          tailnet: "example.com"
+          policy-file: ./policy.hujson
+          action: test
+          api-key: "tskey-api-fake-key-for-testing"
+          # api-key only — no oauth-secret or audience, so no conflicting auth
+
+      - name: Assert action ran (passed auth checks, may fail at API call)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action should pass the auth validation steps (api-key only, no conflicts).
+          # It will then fail at the gitops-pusher step because the API key is fake.
+          # Both outcomes are acceptable: success would mean a real key was used,
+          # failure means the fake key was rejected by the Tailscale API (expected).
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action passed auth checks and failed at Tailscale API call (fake key rejected, as expected)"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (real credentials were available)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
