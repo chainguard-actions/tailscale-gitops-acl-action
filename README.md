@@ -8,6 +8,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 
 | Version | Tag | Upstream commit |
 |---------|-----|-----------------|
+| v1.5.0 | [`v1.5.0`](https://github.com/chainguard-actions/tailscale-gitops-acl-action/tree/v1.5.0) | [`479eaf1`](https://github.com/tailscale/gitops-acl-action/commit/479eaf12a1b8da6ed23613406673fe6f01ade716) |
 | v1.5.1 | [`v1.5.1`](https://github.com/chainguard-actions/tailscale-gitops-acl-action/tree/v1.5.1) | [`4105afd`](https://github.com/tailscale/gitops-acl-action/commit/4105afd651aa659e0eec9031a10360c39fbc0804) |
 
 ## Privacy
